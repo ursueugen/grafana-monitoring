@@ -1,0 +1,29 @@
+
+docker network create monitoring
+# Edit telegraf.conf for influxdb.output docker.inputs
+# Run telegraf container
+sudo docker run -d -p 998:998 --name=telegraf \
+      --net=monitoring \
+      -e HOST_PROC=/host/proc \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      -v /proc:/host/proc:ro \
+      -v /etc/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro \
+      telegraf
+
+# Run influxdb
+docker volume create influxdb
+docker run -d -p 8086:8086 \
+      -v influxdb:/var/lib/influxdb \
+      --network monitoring \
+      --name influxdb \
+      influxdb:1.8
+# Configure influxdb
+docker exec -it influxdb influx
+> create database telegraf
+> use telegraf
+> show field keys
+> show series
+
+# Setup grafana
+docker volume create grafana
+docker run -d -p 3000:3000 --name=grafana -v grafana-storage:/var/lib/grafana grafana/grafana
